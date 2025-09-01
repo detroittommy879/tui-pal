@@ -1,0 +1,7 @@
+PySide6>=6.6
+pyte>=0.8.1
+jsonschema>=4.22
+# Windows-only PTY/ConPTY support
+pywinpty>=2.0; sys_platform == 'win32'
+# Temporary: simplifies Windows PTY spawning for MVP
+pexpect>=4.9

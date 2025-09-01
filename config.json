@@ -1,0 +1,16 @@
+{
+  "sidebar_buttons": [
+    { "label": "List", "command": "dir\n" },
+    { "label": "Clear", "command": "cls\n" },
+    { "label": "Echo Hello", "command": "echo Hello\n" }
+  ],
+  "automation_rules": [
+    {
+      "name": "Accept prompt",
+      "pattern": "\\[Y/N\\]",
+      "response": "Y\n",
+      "once": true
+    }
+  ],
+  "shell": "powershell.exe"
+}
