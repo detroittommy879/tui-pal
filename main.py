@@ -60,11 +60,25 @@ class MainWindow(QMainWindow):
         else:
             # initialize PTY size to current widget grid
             self.process.resize(self.terminal.cols, self.terminal.rows)
+            # Normalize PowerShell prompt to avoid PSReadLine continuation ">>"
+            try:
+                if sys.platform == "win32":
+                    init = (
+                        "Remove-Module PSReadLine -ErrorAction SilentlyContinue\r\n"
+                        "function prompt { 'PS ' + (Get-Location) + '> ' }\r\n"
+                    )
+                    self.process.write(init.encode("utf-8", errors="ignore"))
+            except Exception:
+                pass
 
     def _default_shell(self) -> tuple[str, list[str]]:
         cfg = self._load_config()
-        shell = cfg.get("shell") or ("powershell.exe" if sys.platform == "win32" else "bash")
-        args: list[str] = []
+        if sys.platform == "win32":
+            shell = cfg.get("shell") or "powershell.exe"
+            args: list[str] = cfg.get("shell_args", ["-NoLogo", "-NoProfile"])
+        else:
+            shell = cfg.get("shell") or "bash"
+            args: list[str] = cfg.get("shell_args", [])
         return shell, args
 
     def _load_config(self) -> dict:

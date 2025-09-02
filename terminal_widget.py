@@ -99,15 +99,32 @@ class TerminalWidget(QWidget):
         else:
             super().keyPressEvent(event)
 
+    def send_text(self, text: str, enter: bool = True) -> None:
+        try:
+            payload = text
+            if enter and not payload.endswith("\n") and not payload.endswith("\r"):
+                payload += "\r\n"
+            self.key_bytes.emit(payload.encode("utf-8", errors="replace"))
+        except Exception:
+            pass
+
     def _map_key(self, event: QKeyEvent) -> Optional[bytes]:
         key = event.key()
         text = event.text()
-        if text:
-            return text.encode()
+        # Handle control keys before printable text so Enter doesn't get swallowed by event.text()
+        # Enter: CRLF for PowerShell
         if key in (Qt.Key_Return, Qt.Key_Enter):
-            return b"\r"
+            return b"\r\n"
+        # Backspace (BS)
         if key == Qt.Key_Backspace:
-            return b"\x08"  # Backspace
+            return b"\x08"
+        # Tab
+        if key == Qt.Key_Tab:
+            return b"\t"
+        # Escape
+        if key == Qt.Key_Escape:
+            return b"\x1b"
+        # Arrow keys (ESC [ <code>)
         if key == Qt.Key_Left:
             return b"\x1b[D"
         if key == Qt.Key_Right:
@@ -116,10 +133,32 @@ class TerminalWidget(QWidget):
             return b"\x1b[A"
         if key == Qt.Key_Down:
             return b"\x1b[B"
-        if key == Qt.Key_C and event.modifiers() & Qt.ControlModifier:
-            return b"\x03"  # Ctrl-C (SIGINT)
-        if key == Qt.Key_D and event.modifiers() & Qt.ControlModifier:
-            return b"\x04"  # Ctrl-D (EOT)
+        # Home/End
+        if key == Qt.Key_Home:
+            return b"\x1b[H"
+        if key == Qt.Key_End:
+            return b"\x1b[F"
+        # PageUp/PageDown
+        if key == Qt.Key_PageUp:
+            return b"\x1b[5~"
+        if key == Qt.Key_PageDown:
+            return b"\x1b[6~"
+        # Delete/Insert
+        if key == Qt.Key_Delete:
+            return b"\x1b[3~"
+        if key == Qt.Key_Insert:
+            return b"\x1b[2~"
+        # Ctrl combinations
+        if event.modifiers() & Qt.ControlModifier:
+            if key == Qt.Key_C:
+                return b"\x03"  # ETX (SIGINT)
+            if key == Qt.Key_D:
+                return b"\x04"  # EOT
+            if key == Qt.Key_L:
+                return b"\x0c"  # Form feed
+        # Printable characters last
+        if text:
+            return text.encode("utf-8", errors="replace")
         return None
 
     # --- clipboard/context menu ---
